@@ -1,0 +1,19 @@
+{
+    "name": "seschustle/example-comments-api-client",
+    "description": "Simple API client for example external comments service",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "seschustle\\ExampleCommentsApiClient\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Pavel Lovkii",
+            "email": "plovkiy@yandex.ru"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
