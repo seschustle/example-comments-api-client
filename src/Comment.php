@@ -1,4 +1,11 @@
 <?php
+/**
+ * @author Pavel Lovkii <plovkiy@yandex.ru>
+ * @license https://opensource.org/licenses/MIT MIT License
+ * @link https://github.com/seschustle/example-comments-api-client
+ */
+
+declare(strict_types=1);
 
 namespace seschustle\ExampleCommentsApiClient;
 
@@ -68,11 +75,11 @@ class Comment
         if (empty($data['id'])) {
             throw new \InvalidArgumentException('Missing comment ID');
         }
-        if (!is_int($data['id']) || $data['id'] <= 0) {
+        if ((int) $data['id'] <= 0) {
             throw new \InvalidArgumentException('ID must be a positive integer');
         }
         return new self(
-            $data['id'],
+            (int) $data['id'],
             $data['name'] ?? null,
             $data['text'] ?? null
         );
