@@ -11,9 +11,9 @@ class Comment
      * Class constructor.
      */
     public function __construct(
-        private readonly int $id,
-        private readonly ?string $name,
-        private readonly ?string $text
+        private int $id,
+        private ?string $name,
+        private ?string $text
     ) {}
 
     /**
@@ -57,19 +57,22 @@ class Comment
     /**
      * Create DTO object from a data array
      *
-     * @param array $data
+     * @param array $data ['id' => int, 'name' => string|null, 'text' => string|null]
      *
      * @return Comment
      *
-     * @throws \Exception On missing ID.
+     * @throws \InvalidArgumentException On invalid ID.
      */
     public static function fromArray(array $data): self
     {
         if (empty($data['id'])) {
-            throw new \Exception('Missing comment ID');
+            throw new \InvalidArgumentException('Missing comment ID');
+        }
+        if (!is_int($data['id']) || $data['id'] <= 0) {
+            throw new \InvalidArgumentException('ID must be a positive integer');
         }
         return new self(
-            (int) ($data['id']),
+            $data['id'],
             $data['name'] ?? null,
             $data['text'] ?? null
         );

@@ -2,7 +2,10 @@
 
 namespace seschustle\ExampleCommentsApiClient;
 
-use CommentsApiException;
+use seschustle\ExampleCommentsApiClient\Exception\ApiException;
+use seschustle\ExampleCommentsApiClient\Exception\ExceptionInterface;
+use seschustle\ExampleCommentsApiClient\Exception\InvalidResponseException;
+use seschustle\ExampleCommentsApiClient\Exception\MissingDataException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -24,7 +27,9 @@ class CommentsApiClient
      * Get all comments
      *
      * @return Comment[]
-     * @throws CommentsApiException
+     * @throws ApiException
+     * @throws InvalidResponseException
+     * @throws MissingDataException
      */
     public function getComments(): array
     {
@@ -33,7 +38,7 @@ class CommentsApiClient
             $data = json_decode($response->getBody()->getContents(), true);
 
             if (!is_array($data)) {
-                throw new CommentsApiException('Invalid response format from API');
+                throw new InvalidResponseException('Invalid response format from API');
             }
 
             $comments = [];
@@ -43,7 +48,9 @@ class CommentsApiClient
 
             return $comments;
         } catch (GuzzleException $e) {
-            throw new CommentsApiException('Failed to fetch comments: ' . $e->getMessage(), 0, $e);
+            throw new ApiException('Failed to fetch comments: ' . $e->getMessage(), 0, $e);
+        } catch (ExceptionInterface $e) {
+            throw $e;
         }
     }
 
@@ -53,7 +60,9 @@ class CommentsApiClient
      * @param string $name
      * @param string $text
      * @return Comment
-     * @throws CommentsApiException
+     * @throws ApiException
+     * @throws InvalidResponseException
+     * @throws MissingDataException
      */
     public function createComment(string $name, string $text): Comment
     {
@@ -68,25 +77,29 @@ class CommentsApiClient
             $data = json_decode($response->getBody()->getContents(), true);
 
             if (!is_array($data)) {
-                throw new CommentsApiException('Invalid response format from API');
+                throw new InvalidResponseException('Invalid response format from API');
             }
 
             return Comment::fromArray($data);
         } catch (GuzzleException $e) {
-            throw new CommentsApiException('Failed to create comment: ' . $e->getMessage(), 0, $e);
+            throw new ApiException('Failed to create comment: ' . $e->getMessage(), 0, $e);
+        } catch (ExceptionInterface $e) {
+            throw $e;
         }
     }
 
     /**
      * Update an existing comment
      *
-     * @param string $id
+     * @param int $id
      * @param string $name
      * @param string $text
      * @return Comment
-     * @throws CommentsApiException
+     * @throws ApiException
+     * @throws InvalidResponseException
+     * @throws MissingDataException
      */
-    public function updateComment(string $id, string $name, string $text): Comment
+    public function updateComment(int $id, string $name, string $text): Comment
     {
         try {
             $response = $this->httpClient->put("/comments/{$id}", [
@@ -99,12 +112,14 @@ class CommentsApiClient
             $data = json_decode($response->getBody()->getContents(), true);
 
             if (!is_array($data)) {
-                throw new CommentsApiException('Invalid response format from API');
+                throw new InvalidResponseException('Invalid response format from API');
             }
 
             return Comment::fromArray($data);
         } catch (GuzzleException $e) {
-            throw new CommentsApiException('Failed to update comment: ' . $e->getMessage(), 0, $e);
+            throw new ApiException('Failed to update comment: ' . $e->getMessage(), 0, $e);
+        } catch (ExceptionInterface $e) {
+            throw $e;
         }
     }
 }
