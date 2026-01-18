@@ -2,34 +2,49 @@
 
 namespace seschustle\ExampleCommentsApiClient;
 
+/**
+ * Simple DTO for comments.
+ */
 class Comment
 {
-    private string $id;
-    private string $name;
-    private string $text;
+    /**
+     * Class constructor.
+     */
+    public function __construct(
+        private readonly int $id,
+        private readonly ?string $name,
+        private readonly ?string $text
+    ) {}
 
-    public function __construct(string $id, string $name, string $text)
-    {
-        $this->id = $id;
-        $this->name = $name;
-        $this->text = $text;
-    }
-
-    public function getId(): string
+    /**
+     * @return int
+     */
+    public function getId(): int
     {
         return $this->id;
     }
 
-    public function getName(): string
+    /**
+     * @return string|null
+     */
+    public function getName(): ?string
     {
         return $this->name;
     }
 
-    public function getText(): string
+    /**
+     * @return string|null
+     */
+    public function getText(): ?string
     {
         return $this->text;
     }
 
+    /**
+     * Transform DTO object to a regular array.
+     *
+     * @return array
+     */
     public function toArray(): array
     {
         return [
@@ -39,12 +54,24 @@ class Comment
         ];
     }
 
+    /**
+     * Create DTO object from a data array
+     *
+     * @param array $data
+     *
+     * @return Comment
+     *
+     * @throws \Exception On missing ID.
+     */
     public static function fromArray(array $data): self
     {
+        if (empty($data['id'])) {
+            throw new \Exception('Missing comment ID');
+        }
         return new self(
-            $data['id'] ?? '',
-            $data['name'] ?? '',
-            $data['text'] ?? ''
+            (int) ($data['id']),
+            $data['name'] ?? null,
+            $data['text'] ?? null
         );
     }
 }
