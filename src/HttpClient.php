@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace seschustle\ExampleCommentsApiClient;
+namespace seschustle\ExampleCommentsApiClient\Http;
 
 use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
 use GuzzleHttp\Client;
