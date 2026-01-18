@@ -19,8 +19,8 @@ class Comment
      */
     public function __construct(
         private int $id,
-        private ?string $name,
-        private ?string $text
+        private string $name,
+        private string $text
     ) {}
 
     /**
@@ -32,17 +32,17 @@ class Comment
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getText(): ?string
+    public function getText(): string
     {
         return $this->text;
     }
@@ -64,24 +64,25 @@ class Comment
     /**
      * Create DTO object from a data array
      *
-     * @param array $data ['id' => int, 'name' => string|null, 'text' => string|null]
+     * @param array $data ['id' => int, 'name' => string, 'text' => string]
      *
      * @return Comment
      *
-     * @throws \InvalidArgumentException On invalid ID.
+     * @throws \InvalidArgumentException On invalid comment data.
      */
     public static function fromArray(array $data): self
     {
-        if (empty($data['id'])) {
-            throw new \InvalidArgumentException('Missing comment ID');
-        }
-        if ((int) $data['id'] <= 0) {
+        if (empty($data['id']) || (int) $data['id'] <= 0) {
             throw new \InvalidArgumentException('ID must be a positive integer');
         }
+        if (empty(trim($data['name'])) || empty(trim($data['text']))) {
+            throw new \InvalidArgumentException('Missing comment name or text');
+        }
+
         return new self(
             (int) $data['id'],
-            $data['name'] ?? null,
-            $data['text'] ?? null
+            $data['name'],
+            $data['text']
         );
     }
 }
