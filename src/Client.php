@@ -129,7 +129,11 @@ class Client
         $statusCode = $response->getStatusCode();
         if ($statusCode < 200 || $statusCode >= 300) {
             throw new ApiRequestException(
-                sprintf('API returned HTTP %d status code', $statusCode),
+                sprintf(
+                    'API returned HTTP %d status code. Response: %s',
+                    $statusCode, 
+                    json_decode($response->getBody()->getContents(), true)
+                ),
                 $statusCode,
             );
         }
