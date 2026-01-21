@@ -10,7 +10,11 @@ declare(strict_types=1);
 namespace seschustle\ExampleCommentsApiClient;
 
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Http\Message\RequestInterface;
+use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
 use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
 
 /**
@@ -26,14 +30,15 @@ class Client
      * Class constructor.
      * 
      * @param string $apiToken API token.
-     * 
      * @param ClientInterface|null $httpClient PSR-18 HTTP client. Will try to be discovered if null.
      * @param RequestFactoryInterface|null $requestFactory PSR-17 Request factory. Will try to be discovered if null.
+     * @param StreamFactoryInterface|null $streamFactory PSR-17 Stream factory. Will try to be discovered if null.
      */
     public function __construct(
         string $apiToken = '',
         private ?ClientInterface $httpClient = null,
-        private ?RequestFactoryInterface $requestFactory = null
+        private ?RequestFactoryInterface $requestFactory = null,
+        private ?StreamFactoryInterface $streamFactory = null
         )
     {
         $this->apiToken = $apiToken;
@@ -46,13 +51,7 @@ class Client
      */
     public function getAll(): array
     {
-        $request = $this->requestFactory->createRequest('GET', self::BASE_URI . '/comments');
-        $response = $this->httpClient->sendRequest($request);
-        $responseData = json_decode($response->getBody()->getContents(), true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new InvalidApiResponseException('Invalid JSON response');
-        }
+        $responseData = $this->makeRequest('GET', self::BASE_URI . '/comments');
         
         $comments = [];
         foreach ($responseData as $comment) {
@@ -72,19 +71,10 @@ class Client
      */
     public function createComment(string $name, string $text): Comment
     {
-        $request = $this
-            ->requestFactory
-            ->createRequest('POST', self::BASE_URI . '/comments')
-            ->withBody(stream_for(json_encode([
-                'name' => $name,
-                'text' => $text,
-            ])));
-        $response = $this->httpClient->sendRequest($request);
-        $responseData = json_decode($response->getBody()->getContents(), true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new InvalidApiResponseException('Invalid JSON response');
-        }
+        $responseData = $this->makeRequest('POST', self::BASE_URI . '/comments', [
+            'name' => $name,
+            'text' => $text,
+        ]);
 
         return Comment::fromArray($responseData);
     }
@@ -99,20 +89,51 @@ class Client
      */
     public function updateComment(int $id, array $data): Comment
     {
-        $request = $this
-            ->requestFactory
-            ->createRequest('PUT', self::BASE_URI . '/comments')
-            ->withBody(stream_for(json_encode([
-                'name' => $name,
-                'text' => $text,
-            ])));
-        $response = $this->httpClient->sendRequest($request);
+        $responseData = $this->makeRequest('PUT', self::BASE_URI . '/comments', [
+            'name' => $data['name'],
+            'text' => $data['text'],
+        ]);
+
+        return Comment::fromArray($responseData);
+    }
+
+    /**
+     * Make HTTP request with optional JSON body and handle exceptions.
+     *
+     * @param string $method HTTP method (GET, POST, PUT, etc.).
+     * @param string $url Request URL.
+     * @param array|null $options Request options (will be sent as JSON body).
+     * 
+     * @return array Decoded response data.
+     * 
+     * @throws ApiRequestException When HTTP request fails.
+     * @throws InvalidApiResponseException When response is not valid JSON.
+     */
+    private function makeRequest(string $method, string $url, ?array $options = null): array
+    {
+        $request = $this->requestFactory->createRequest($method, $url);
         
+        if ($options !== null) {
+            $body = $this->streamFactory->createStream(json_encode($options));
+            $request = $request->withBody($body);
+        }
+        
+        // Add authorization header (placeholder for API token)
+        if ($this->apiToken) {
+            $request = $request->withHeader('Authorization', 'Bearer ' . $this->apiToken);
+        }
+
+        try {
+            $response = $this->httpClient->sendRequest($request);
+        } catch (ClientExceptionInterface $e) {
+            throw new ApiRequestException('Failed to send HTTP request', 0, $e);
+        }
+
         $responseData = json_decode($response->getBody()->getContents(), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new InvalidApiResponseException('Invalid JSON response');
         }
 
-        return Comment::fromArray($responseData);
+        return $responseData;
     }
 }
