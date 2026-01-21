@@ -51,13 +51,13 @@ class Client
     }
 
     /**
-     * Get all comments.
+     * List all comments.
      *
      * @return Comment[]
      * 
      * @throws InvalidApiResponseException When comment DTO creation fails.
      */
-    public function getAll(): array
+    public function listComments(): array
     {   
         try {
             return array_map(
