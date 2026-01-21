@@ -88,6 +88,17 @@ $client = new Client(
 );
 ```
 
+## Recursive count summarizer
+This package also provides simple script to get sum of the numbers in `count` files recursively.
+To use it, execute
+```bash
+php recursive-count-summarizer.php directory_name
+```
+The script will scan the directory and if it finds `count` file in it, it will add the sum of all integer numbers in it to the result.
+
+> [!IMPORTANT]
+> The script does not support floats and negative number, e.g. `-5abd 13.2` will be interpreted as `5+13+2=20`, not `-8.2`.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) file for details.
