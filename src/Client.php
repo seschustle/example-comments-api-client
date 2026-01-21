@@ -19,7 +19,6 @@ use Http\Discovery\Psr17FactoryDiscovery;
 use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
 use seschustle\ExampleCommentsApiClient\Exception\DTOCreationException;
 use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
-use Throwable;
 
 /**
  * Main comments API client class.
@@ -81,7 +80,6 @@ class Client
      */
     public function createComment(array $fields): Comment
     {
-        //@todo: filter fields
         try {
             return Comment::fromArray($this->makeRequest('POST', '/comments', ['body' => $fields]));
         } catch (DTOCreationException $ex) {
@@ -93,7 +91,7 @@ class Client
      * Update an existing comment.
      *
      * @param int $id Comment ID.
-     * @param array $fields Updated comment data. 
+     * @param array $fields Comment fields to update.
      * 
      * @return Comment Updated comment.
      * 
@@ -101,7 +99,6 @@ class Client
      */
     public function updateComment(int $id, array $fields): Comment
     {
-        // @todo: filter fields
         try {
             return Comment::fromArray($this->makeRequest('PUT', "/comments/$id", ['body' => $fields]));
         } catch (DTOCreationException $ex) {
@@ -112,35 +109,34 @@ class Client
     /**
      * Make HTTP request with optional JSON body.
      *
-     * @param string $method HTTP method (GET, POST, PUT, etc.).
-     * @param string $path Request path (will be appended to BASE_URI).
-     * @param array|null $options Request options (will be sent as JSON body).
+     * @param string $method HTTP Request method.
+     * @param string $path Request path.
+     * @param array $options Request options. Currently only supports JSON body.
      * 
      * @return array Decoded response data.
      * 
      * @throws ApiRequestException When HTTP request fails.
      * @throws InvalidApiResponseException When response status is not 2xx or JSON is invalid.
      */
-    private function makeRequest(string $method, string $path, ?array $options = null): array
+    private function makeRequest(string $method, string $path, array $options = []): array
     {
         try {
             $response = $this->httpClient->sendRequest($this->prepareRequest($method, $path, $options));
         } catch (ClientExceptionInterface $e) {
             throw new ApiRequestException('Failed to send HTTP request', 0, $e);
         }
-
-        // Validate HTTP status code
+ 
         $statusCode = $response->getStatusCode();
         if ($statusCode < 200 || $statusCode >= 300) {
             throw new ApiRequestException(
                 sprintf('API returned HTTP %d status code', $statusCode),
-                $statusCode
+                $statusCode,
             );
         }
 
         $responseData = json_decode($response->getBody()->getContents(), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new InvalidApiResponseException('Invalid JSON response');
+            throw new InvalidApiResponseException('Invalid JSON response received from API');
         }
 
         return $responseData;
@@ -155,7 +151,7 @@ class Client
      *
      * @return RequestInterface Prepared request.
      */
-    private function prepareRequest(string $method, string $path, ?array $options = null): RequestInterface
+    private function prepareRequest(string $method, string $path, array $options = []): RequestInterface
     {
         $request = $this
             ->requestFactory
