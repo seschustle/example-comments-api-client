@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace seschustle\ExampleCommentsApiClient;
 
-use GuzzleHttp\Client as GuzzleClient;
-use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
 
 /**
@@ -20,14 +20,23 @@ class Client
 {
     public const BASE_URI = 'https://89b6a81e-5e8f-4acf-a069-72d9e03e90d8.mock.pstmn.io';
 
-    private GuzzleClient $httpClient;
+    private $apiToken;
 
     /**
      * Class constructor.
+     * 
+     * @param string $apiToken API token.
+     * 
+     * @param ClientInterface|null $httpClient PSR-18 HTTP client. Will try to be discovered if null.
+     * @param RequestFactoryInterface|null $requestFactory PSR-17 Request factory. Will try to be discovered if null.
      */
-    public function __construct()
+    public function __construct(
+        string $apiToken = '',
+        private ?ClientInterface $httpClient = null,
+        private ?RequestFactoryInterface $requestFactory = null
+        )
     {
-        $this->httpClient = new GuzzleClient(['base_uri' => self::BASE_URI]);
+        $this->apiToken = $apiToken;
     }
 
     /**
@@ -37,7 +46,8 @@ class Client
      */
     public function getAll(): array
     {
-        $response = $this->httpClient->get('/comments');
+        $request = $this->requestFactory->createRequest('GET', self::BASE_URI . '/comments');
+        $response = $this->httpClient->sendRequest($request);
         $responseData = json_decode($response->getBody()->getContents(), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -62,12 +72,14 @@ class Client
      */
     public function createComment(string $name, string $text): Comment
     {
-        $response = $this->httpClient->post('/comments', [
-            'json' => [
+        $request = $this
+            ->requestFactory
+            ->createRequest('POST', self::BASE_URI . '/comments')
+            ->withBody(stream_for(json_encode([
                 'name' => $name,
                 'text' => $text,
-            ],
-        ]);
+            ])));
+        $response = $this->httpClient->sendRequest($request);
         $responseData = json_decode($response->getBody()->getContents(), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -87,11 +99,16 @@ class Client
      */
     public function updateComment(int $id, array $data): Comment
     {
-        $response = $this->httpClient->post('/comments', [
-            'json' => $data,
-        ]);
+        $request = $this
+            ->requestFactory
+            ->createRequest('PUT', self::BASE_URI . '/comments')
+            ->withBody(stream_for(json_encode([
+                'name' => $name,
+                'text' => $text,
+            ])));
+        $response = $this->httpClient->sendRequest($request);
+        
         $responseData = json_decode($response->getBody()->getContents(), true);
-
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new InvalidApiResponseException('Invalid JSON response');
         }
