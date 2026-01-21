@@ -10,10 +10,12 @@ declare(strict_types=1);
 function summarizeCounts(string $dirPath): int
 {
     if (!is_dir($dirPath)) {
-        throw new InvalidArgumentException("$dirPath is not a directory.");
+        throw new InvalidArgumentException("$dirPath does not exist or is not a directory.");
     }
 
+    $dirIterator = new RecursiveDirectoryIterator($dirPath, RecursiveDirectoryIterator::SKIP_DOTS);
     $sum = 0;
+
     foreach (scandir($dirPath) as $child) {
         if ($child === '.' || $child === '..') {
             continue;
@@ -31,4 +33,26 @@ function summarizeCounts(string $dirPath): int
     return $sum;
 }
 
-echo summarizeCounts(__DIR__ . '/' . $argv[1]);
+function summarizeCountsByIterator(string $dirPath): int
+{
+    if (!is_dir($dirPath)) {
+        throw new InvalidArgumentException("$dirPath does not exist or is not a directory.");
+    }
+
+    $dirIterator = new RecursiveDirectoryIterator($dirPath, RecursiveDirectoryIterator::SKIP_DOTS);
+
+    $sum = 0;
+    foreach ($dirIterator as $file) {
+        if ($file->isDir()) {
+            $sum += summarizeCountsByIterator($file->getRealPath());
+        }
+        
+        if ($file->isFile() && $file->getFilename() === 'count') {
+            $sum += (int) file_get_contents($file->getRealPath());
+        }
+    }
+
+    return $sum;
+}
+
+echo summarizeCountsByIterator(__DIR__ . '/' . $argv[1]);
