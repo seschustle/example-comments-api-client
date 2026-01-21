@@ -107,4 +107,12 @@ class CommentsClient
 
         return Comment::fromArray($data);
     }
+
+    private function requestAsArray(string $method, string $url, array $options = []): array
+    {
+        // authenticate
+        // make request
+        // check response code
+        // decode response on 2xx, throw on 4xx or 5xx
+    }
 }
