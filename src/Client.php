@@ -12,10 +12,12 @@ namespace seschustle\ExampleCommentsApiClient;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Http\Discovery\Psr18ClientDiscovery;
 use Http\Discovery\Psr17FactoryDiscovery;
 use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
+use seschustle\ExampleCommentsApiClient\Exception\DTOCreationException;
 use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
 use Throwable;
 
@@ -24,7 +26,7 @@ use Throwable;
  */
 class Client
 {
-    public const BASE_URI = 'https://89b6a81e-5e8f-4acf-a069-72d9e03e90d8.mock.pstmn.io';
+    public const BASE_URI = 'https://example.com';
 
     private $apiToken;
 
@@ -57,38 +59,33 @@ class Client
      * @throws InvalidApiResponseException When comment DTO creation fails.
      */
     public function getAll(): array
-    {
-        $responseData = $this->makeRequest('GET', '/comments');
-        
-        $comments = [];
-        foreach ($responseData as $comment) {
-            try {
-                $comments[] = Comment::fromArray($comment);
-            } catch (Throwable $e) {
-                throw new InvalidApiResponseException('Failed to create Comment DTO', 0, $e);
-            }
+    {   
+        try {
+            return array_map(
+                static fn (array $commentData): Comment => Comment::fromArray($commentData),
+                $this->makeRequest('GET', '/comments')
+            );
+        } catch (DTOCreationException $ex) {
+            throw new InvalidApiResponseException('Failed to create Comment DTO from a reponse data', $ex->getCode(), $ex);
         }
-            
-        return $comments;
     }
 
     /**
      * Create a new comment.
      *
-     * @param array $data Comment data with 'name' and 'text' keys.
+     * @param array $fields Comment data with 'name' and 'text' keys.
      * 
      * @return Comment Created comment.
      * 
      * @throws InvalidApiResponseException When comment DTO creation fails.
      */
-    public function createComment(array $data): Comment
+    public function createComment(array $fields): Comment
     {
-        $responseData = $this->makeRequest('POST', '/comments', $data);
-
+        //@todo: filter fields
         try {
-            return Comment::fromArray($responseData);
-        } catch (Throwable $e) {
-            throw new InvalidApiResponseException('Failed to create Comment DTO', 0, $e);
+            return Comment::fromArray($this->makeRequest('POST', '/comments', ['body' => $fields]));
+        } catch (DTOCreationException $ex) {
+            throw new InvalidApiResponseException('Failed to create Comment DTO from a reponse data', $ex->getCode(), $ex);
         }
     }
 
@@ -96,28 +93,24 @@ class Client
      * Update an existing comment.
      *
      * @param int $id Comment ID.
-     * @param array $data Updated comment date. 
+     * @param array $fields Updated comment data. 
      * 
      * @return Comment Updated comment.
      * 
      * @throws InvalidApiResponseException When comment DTO creation fails.
      */
-    public function updateComment(int $id, array $data): Comment
+    public function updateComment(int $id, array $fields): Comment
     {
-        $responseData = $this->makeRequest('PUT', "/comments/$id", [
-            'name' => $data['name'],
-            'text' => $data['text'],
-        ]);
-
+        // @todo: filter fields
         try {
-            return Comment::fromArray($responseData);
-        } catch (Throwable $e) {
-            throw new InvalidApiResponseException('Failed to create Comment DTO', 0, $e);
+            return Comment::fromArray($this->makeRequest('PUT', "/comments/$id", ['body' => $fields]));
+        } catch (DTOCreationException $ex) {
+            throw new InvalidApiResponseException('Failed to create Comment DTO from a reponse data', $ex->getCode(), $ex);
         }
     }
 
     /**
-     * Make HTTP request with optional JSON body and handle exceptions.
+     * Make HTTP request with optional JSON body.
      *
      * @param string $method HTTP method (GET, POST, PUT, etc.).
      * @param string $path Request path (will be appended to BASE_URI).
@@ -126,25 +119,23 @@ class Client
      * @return array Decoded response data.
      * 
      * @throws ApiRequestException When HTTP request fails.
-     * @throws InvalidApiResponseException When response is not valid JSON.
+     * @throws InvalidApiResponseException When response status is not 2xx or JSON is invalid.
      */
     private function makeRequest(string $method, string $path, ?array $options = null): array
     {
-        $request = $this
-            ->requestFactory
-            ->createRequest($method, self::BASE_URI . $path)
-            ->withHeader('Authorization', 'Bearer ' . $this->apiToken)
-            ->withHeader('Content-Type', 'application/json');
-        
-        if ($options !== null) {
-            $body = $this->streamFactory->createStream(json_encode($options));
-            $request = $request->withBody($body);
-        }
-
         try {
-            $response = $this->httpClient->sendRequest($request);
+            $response = $this->httpClient->sendRequest($this->prepareRequest($method, $path, $options));
         } catch (ClientExceptionInterface $e) {
             throw new ApiRequestException('Failed to send HTTP request', 0, $e);
+        }
+
+        // Validate HTTP status code
+        $statusCode = $response->getStatusCode();
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new ApiRequestException(
+                sprintf('API returned HTTP %d status code', $statusCode),
+                $statusCode
+            );
         }
 
         $responseData = json_decode($response->getBody()->getContents(), true);
@@ -153,5 +144,29 @@ class Client
         }
 
         return $responseData;
+    }
+
+    /**
+     * Prepare HTTP request with headers and optional JSON body.
+     *
+     * @param string $method Request method.
+     * @param string $path URI path.
+     * @param mixed $options HTTP request options.
+     *
+     * @return RequestInterface Prepared request.
+     */
+    private function prepareRequest(string $method, string $path, ?array $options = null): RequestInterface
+    {
+        $request = $this
+            ->requestFactory
+            ->createRequest($method, self::BASE_URI . $path)
+            ->withHeader('Authorization', 'Bearer ' . $this->apiToken)
+            ->withHeader('Content-Type', 'application/json');
+
+        if ($options['body'] !== null) {
+            $request = $request->withBody($this->streamFactory->createStream(json_encode($options['body'])));
+        }
+
+        return $request;
     }
 }

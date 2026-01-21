@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace seschustle\ExampleCommentsApiClient;
 
+use seschustle\ExampleCommentsApiClient\Exception\DTOCreationException;
+
 /**
  * Simple DTO for comments.
  */
@@ -68,15 +70,15 @@ class Comment
      *
      * @return Comment
      *
-     * @throws \InvalidArgumentException On invalid comment data.
+     * @throws DTOCreationException On invalid comment data.
      */
     public static function fromArray(array $data): self
     {
         if (empty($data['id']) || (int) $data['id'] <= 0) {
-            throw new \InvalidArgumentException('ID must be a positive integer');
+            throw new DTOCreationException('ID must be a positive integer');
         }
         if (empty(trim($data['name'])) || empty(trim($data['text']))) {
-            throw new \InvalidArgumentException('Missing comment name or text');
+            throw new DTOCreationException('Missing comment name or text');
         }
 
         return new self(
