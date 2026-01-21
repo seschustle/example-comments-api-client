@@ -14,6 +14,8 @@ use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\RequestInterface;
+use Http\Discovery\Psr18ClientDiscovery;
+use Http\Discovery\Psr17FactoryDiscovery;
 use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
 use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
 
@@ -42,6 +44,21 @@ class Client
         )
     {
         $this->apiToken = $apiToken;
+        
+        // Discover HTTP client if not provided
+        if ($this->httpClient === null) {
+            $this->httpClient = Psr18ClientDiscovery::find();
+        }
+        
+        // Discover request factory if not provided
+        if ($this->requestFactory === null) {
+            $this->requestFactory = Psr17FactoryDiscovery::findRequestFactory();
+        }
+        
+        // Discover stream factory if not provided
+        if ($this->streamFactory === null) {
+            $this->streamFactory = Psr17FactoryDiscovery::findStreamFactory();
+        }
     }
 
     /**
