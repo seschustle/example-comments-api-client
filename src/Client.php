@@ -132,7 +132,7 @@ class Client
                 sprintf(
                     'API returned HTTP %d status code. Response: %s',
                     $statusCode, 
-                    json_decode($response->getBody()->getContents(), true)
+                    json_encode(json_decode($response->getBody()->getContents(), true))
                 ),
                 $statusCode,
             );
@@ -163,7 +163,7 @@ class Client
             ->withHeader('Authorization', 'Bearer ' . $this->apiToken)
             ->withHeader('Content-Type', 'application/json');
 
-        if ($options['body'] !== null) {
+        if (!empty($options['body'])) {
             $request = $request->withBody($this->streamFactory->createStream(json_encode($options['body'])));
         }
 
