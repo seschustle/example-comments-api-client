@@ -13,11 +13,11 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Http\Message\RequestInterface;
 use Http\Discovery\Psr18ClientDiscovery;
 use Http\Discovery\Psr17FactoryDiscovery;
 use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
 use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
+use Throwable;
 
 /**
  * Main comments API client class.
@@ -37,42 +37,36 @@ class Client
      * @param StreamFactoryInterface|null $streamFactory PSR-17 Stream factory. Will try to be discovered if null.
      */
     public function __construct(
-        string $apiToken = '',
+        string $apiToken,
         private ?ClientInterface $httpClient = null,
         private ?RequestFactoryInterface $requestFactory = null,
         private ?StreamFactoryInterface $streamFactory = null
         )
     {
         $this->apiToken = $apiToken;
-        
-        // Discover HTTP client if not provided
-        if ($this->httpClient === null) {
-            $this->httpClient = Psr18ClientDiscovery::find();
-        }
-        
-        // Discover request factory if not provided
-        if ($this->requestFactory === null) {
-            $this->requestFactory = Psr17FactoryDiscovery::findRequestFactory();
-        }
-        
-        // Discover stream factory if not provided
-        if ($this->streamFactory === null) {
-            $this->streamFactory = Psr17FactoryDiscovery::findStreamFactory();
-        }
+        $this->httpClient ??= Psr18ClientDiscovery::find();
+        $this->requestFactory ??= Psr17FactoryDiscovery::findRequestFactory();
+        $this->streamFactory ??= Psr17FactoryDiscovery::findStreamFactory();
     }
 
     /**
      * Get all comments.
      *
      * @return Comment[]
+     * 
+     * @throws InvalidApiResponseException When comment DTO creation fails.
      */
     public function getAll(): array
     {
-        $responseData = $this->makeRequest('GET', self::BASE_URI . '/comments');
+        $responseData = $this->makeRequest('GET', '/comments');
         
         $comments = [];
         foreach ($responseData as $comment) {
-            $comments[] = Comment::fromArray($comment);
+            try {
+                $comments[] = Comment::fromArray($comment);
+            } catch (Throwable $e) {
+                throw new InvalidApiResponseException('Failed to create Comment DTO', 0, $e);
+            }
         }
             
         return $comments;
@@ -81,19 +75,21 @@ class Client
     /**
      * Create a new comment.
      *
-     * @param string $name Author name.
-     * @param string $text Comment text.
+     * @param array $data Comment data with 'name' and 'text' keys.
      * 
      * @return Comment Created comment.
+     * 
+     * @throws InvalidApiResponseException When comment DTO creation fails.
      */
-    public function createComment(string $name, string $text): Comment
+    public function createComment(array $data): Comment
     {
-        $responseData = $this->makeRequest('POST', self::BASE_URI . '/comments', [
-            'name' => $name,
-            'text' => $text,
-        ]);
+        $responseData = $this->makeRequest('POST', '/comments', $data);
 
-        return Comment::fromArray($responseData);
+        try {
+            return Comment::fromArray($responseData);
+        } catch (Throwable $e) {
+            throw new InvalidApiResponseException('Failed to create Comment DTO', 0, $e);
+        }
     }
 
     /**
@@ -103,22 +99,28 @@ class Client
      * @param array $data Updated comment date. 
      * 
      * @return Comment Updated comment.
+     * 
+     * @throws InvalidApiResponseException When comment DTO creation fails.
      */
     public function updateComment(int $id, array $data): Comment
     {
-        $responseData = $this->makeRequest('PUT', self::BASE_URI . '/comments', [
+        $responseData = $this->makeRequest('PUT', "/comments/$id", [
             'name' => $data['name'],
             'text' => $data['text'],
         ]);
 
-        return Comment::fromArray($responseData);
+        try {
+            return Comment::fromArray($responseData);
+        } catch (Throwable $e) {
+            throw new InvalidApiResponseException('Failed to create Comment DTO', 0, $e);
+        }
     }
 
     /**
      * Make HTTP request with optional JSON body and handle exceptions.
      *
      * @param string $method HTTP method (GET, POST, PUT, etc.).
-     * @param string $url Request URL.
+     * @param string $path Request path (will be appended to BASE_URI).
      * @param array|null $options Request options (will be sent as JSON body).
      * 
      * @return array Decoded response data.
@@ -126,18 +128,17 @@ class Client
      * @throws ApiRequestException When HTTP request fails.
      * @throws InvalidApiResponseException When response is not valid JSON.
      */
-    private function makeRequest(string $method, string $url, ?array $options = null): array
+    private function makeRequest(string $method, string $path, ?array $options = null): array
     {
-        $request = $this->requestFactory->createRequest($method, $url);
+        $request = $this
+            ->requestFactory
+            ->createRequest($method, self::BASE_URI . $path)
+            ->withHeader('Authorization', 'Bearer ' . $this->apiToken)
+            ->withHeader('Content-Type', 'application/json');
         
         if ($options !== null) {
             $body = $this->streamFactory->createStream(json_encode($options));
             $request = $request->withBody($body);
-        }
-        
-        // Add authorization header (placeholder for API token)
-        if ($this->apiToken) {
-            $request = $request->withHeader('Authorization', 'Bearer ' . $this->apiToken);
         }
 
         try {
