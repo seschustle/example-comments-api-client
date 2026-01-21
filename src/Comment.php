@@ -83,8 +83,8 @@ class Comment
 
         return new self(
             (int) $data['id'],
-            trim($data['name']),
-            trim($data['text'])
+            $data['name'],
+            $data['text']
         );
     }
 }
