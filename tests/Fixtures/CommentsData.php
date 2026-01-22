@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace seschustle\ExampleCommentsApiClient\Tests\Unit\Fixtures\Client;
+namespace seschustle\ExampleCommentsApiClient\Tests\Fixtures;
 
 /**
  * Predefines comments test data used in tests.
