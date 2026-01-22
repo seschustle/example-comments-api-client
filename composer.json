@@ -23,6 +23,14 @@
         "php-http/discovery": "^1.15",
         "guzzlehttp/guzzle": "^7.9"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "seschustle\\ExampleCommentsApiClient\\Tests\\": "tests/"
+        }
+    },
     "config": {
         "allow-plugins": {
             "php-http/discovery": true
