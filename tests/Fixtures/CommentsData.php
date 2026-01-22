@@ -19,7 +19,7 @@ class CommentsData
         return [
             'id' => 99,
             'name' => 'John Doe',
-            'text' => 'Great article!',
+            'text' => 'This is a great comment!',
         ];
     }
 
@@ -110,7 +110,12 @@ class CommentsData
     public static function valiPartialUpdateData(): array
     {
         return [
-            'text' => 'I can edit the comments!',
+            'text' => 'This is a great comment!',
         ];
+    }
+
+    public static function malformedJson(): string
+    {
+        return 'invalid json {[}';
     }
 }
