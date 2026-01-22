@@ -1,6 +1,6 @@
 {
     "name": "seschustle/example-comments-api-client",
-    "description": "Simple API client for example external comments service",
+    "description": "Simple API client for imaginary comments service",
     "type": "library",
     "license": "MIT",
     "autoload": {
@@ -15,5 +15,25 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {}
+    "require": {
+        "php": ">=8.2",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^2.0",
+        "php-http/discovery": "^1.15",
+        "guzzlehttp/guzzle": "^7.9"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "seschustle\\ExampleCommentsApiClient\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
 }
