@@ -77,7 +77,7 @@ class Comment
         if (empty($data['id']) || (int) $data['id'] <= 0) {
             throw new DTOCreationException('ID must be a positive integer');
         }
-        if (empty(trim($data['name'])) || empty(trim($data['text']))) {
+        if (empty($data['name']) || empty($data['text'])) {
             throw new DTOCreationException('Missing comment name or text');
         }
 

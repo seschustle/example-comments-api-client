@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace seschustle\ExampleCommentsApiClient\Tests\Unit\Client;
 
 use seschustle\ExampleCommentsApiClient\Exception\DTOCreationException;
+use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
 use seschustle\ExampleCommentsApiClient\Tests\Fixtures\CommentsData;
 
 /**
@@ -18,7 +19,7 @@ class ListCommentsTest extends ClientTestCase
 {
     /**
      * No comments found case, happy path.
-     * 
+     *
      * @return void
      */
     public function testListCommentsIsEmpty(): void
@@ -33,7 +34,7 @@ class ListCommentsTest extends ClientTestCase
 
     /**
      * Only one comment found case, happy path.
-     * 
+     *
      * @return void
      */
     public function testListCommentsHasSingleComment(): void
@@ -48,7 +49,7 @@ class ListCommentsTest extends ClientTestCase
 
     /**
      * Deafult case, multiple comments found, happy path.
-     * 
+     *
      * @return void
      */
     public function testListCommentsHasMultipleComments(): void
@@ -63,18 +64,25 @@ class ListCommentsTest extends ClientTestCase
 
     /**
      * Invalid comments found case, expects exception.
-     * 
+     *
      * @return void
      */
     public function testListCommentsHasInvalidComments(): void
     {
         $this->prepareClient(CommentsData::multipleCommentsContaintsInvalid());
+        $this->expectException(InvalidApiResponseException::class);
+        $this->expectExceptionMessage('Failed to create Comment DTO from a reponse data');
 
-        $comments = $this->client->listComments();
-
-        $this->expectException(DTOCreationException::class);
+        $this->client->listComments();
     }
 
+    /**
+     * Mock response and client with given awaited response.
+     *
+     * @param array $awaitedResponse
+     *
+     * @return void
+     */
     private function prepareClient(array $awaitedResponse): void
     {
         $response = $this->createMockResponse(200, json_encode($awaitedResponse));
