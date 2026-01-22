@@ -88,6 +88,12 @@ $client = new Client(
 );
 ```
 
+### Tests
+This package provides basic PHPUnit test coverage for API methods under a `tests` folder. To run them, execute
+```bash
+./vendor/bin/phpunit tests/Unit/Client/
+```
+
 ## Recursive count summarizer
 This package also provides simple script to get sum of the numbers in `count` files recursively.
 To use it, execute

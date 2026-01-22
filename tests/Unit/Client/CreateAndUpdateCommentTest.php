@@ -2,6 +2,7 @@
 /**
  * @author Pavel Lovkii <plovkiy@yandex.ru>
  * @license https://opensource.org/licenses/MIT MIT License
+ * @link https://github.com/seschustle/example-comments-api-client
  */
 
 declare(strict_types=1);
@@ -10,8 +11,6 @@ namespace seschustle\ExampleCommentsApiClient\Tests\Unit\Client;
 
 use seschustle\ExampleCommentsApiClient\Comment;
 use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
-use seschustle\ExampleCommentsApiClient\Exception\DTOCreationException;
-use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
 use seschustle\ExampleCommentsApiClient\Tests\Fixtures\CommentsData;
 use seschustle\ExampleCommentsApiClient\Tests\Fixtures\HttpErrorBody;
 
@@ -22,13 +21,13 @@ class CreateAndUpdateCommentTest extends ClientTestCase
 {
     /**
      * Successful comment creation, happy path.
-     * 
+     *
      * @return void
      */
     public function testCreateSuccess(): void
     {
         $this->prepareClient(201, CommentsData::validSingleComment());
-        
+
         $comment = $this->client->createComment(CommentsData::validCreateAndUpdateData());
 
         $this->assertInstanceOf(Comment::class, $comment);
@@ -37,13 +36,13 @@ class CreateAndUpdateCommentTest extends ClientTestCase
 
     /**
      * Successful comment update, happy path.
-     * 
+     *
      * @return void
      */
     public function testUpdateSuccess(): void
     {
         $this->prepareClient(200, CommentsData::validSingleComment());
-        
+
         $comment = $this->client->updateComment(1, CommentsData::validCreateAndUpdateData());
 
         $this->assertSame(CommentsData::validSingleComment()['name'], $comment->getName());
@@ -52,13 +51,13 @@ class CreateAndUpdateCommentTest extends ClientTestCase
 
     /**
      * Successful comment creation with partial data, happy path.
-     * 
+     *
      * @return void
      */
     public function testUpdateWithPartialDataSuccess(): void
     {
         $this->prepareClient(200, CommentsData::validSingleComment());
-        
+
         $comment = $this->client->updateComment(1, CommentsData::valiPartialUpdateData());
 
         $this->assertSame(CommentsData::validSingleComment()['name'], $comment->getName());
@@ -76,7 +75,7 @@ class CreateAndUpdateCommentTest extends ClientTestCase
         $this->expectException(ApiRequestException::class);
         $this->expectExceptionCode(422);
         $this->expectExceptionMessage('API returned HTTP 422 status code. Response: {"code":422,"message":"Unprocessable entity, check payload."}');
-        
+
         $this->client->createComment(CommentsData::valiPartialUpdateData());
     }
 
