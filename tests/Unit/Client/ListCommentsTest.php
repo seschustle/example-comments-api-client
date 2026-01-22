@@ -63,6 +63,22 @@ class ListCommentsTest extends ClientTestCase
     }
 
     /**
+     * Invalid JSON returned from server, expects exception.
+     *
+     * @return void
+     */
+    public function testMalformedJsonReturned(): void
+    {
+        $response = $this->createMockResponse(200, json_encode(CommentsData::malformedJson()));
+        $this->httpClient->method('sendRequest')->willReturn($response);
+
+        $this->expectException(InvalidApiResponseException::class);
+        $this->expectExceptionMessage('Invalid JSON response received from API');
+
+        $this->client->listComments();   
+    }
+
+    /**
      * Invalid comments found case, expects exception.
      *
      * @return void

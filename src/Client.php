@@ -139,7 +139,7 @@ class Client
         }
 
         $responseData = json_decode($response->getBody()->getContents(), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($responseData)) {
             throw new InvalidApiResponseException('Invalid JSON response received from API');
         }
 

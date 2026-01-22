@@ -11,6 +11,7 @@ namespace seschustle\ExampleCommentsApiClient\Tests\Unit\Client;
 
 use seschustle\ExampleCommentsApiClient\Comment;
 use seschustle\ExampleCommentsApiClient\Exception\ApiRequestException;
+use seschustle\ExampleCommentsApiClient\Exception\InvalidApiResponseException;
 use seschustle\ExampleCommentsApiClient\Tests\Fixtures\CommentsData;
 use seschustle\ExampleCommentsApiClient\Tests\Fixtures\HttpErrorBody;
 
@@ -92,6 +93,38 @@ class CreateAndUpdateCommentTest extends ClientTestCase
         $this->expectExceptionMessage('API returned HTTP 404 status code. Response: {"code":404,"message":"Page not found, check URL."}');
         
         $this->client->updateComment(999, CommentsData::valiPartialUpdateData());
+    }
+
+    /**
+     * Comment created but bad response returned, expects exception.
+     *
+     * @return void
+     */
+    public function testMalformedJsonReturnedForCreate(): void
+    {
+        $response = $this->createMockResponse(201, json_encode(CommentsData::malformedJson()));
+        $this->httpClient->method('sendRequest')->willReturn($response);
+
+        $this->expectException(InvalidApiResponseException::class);
+        $this->expectExceptionMessage('Invalid JSON response received from API');
+
+        $this->client->createComment(CommentsData::validCreateAndUpdateData());   
+    }
+
+    /**
+     * Comment updated but bad response returned, expects exception.
+     *
+     * @return void
+     */
+    public function testMalformedJsonReturnedForUpdates(): void
+    {
+        $response = $this->createMockResponse(200, json_encode(CommentsData::malformedJson()));
+        $this->httpClient->method('sendRequest')->willReturn($response);
+
+        $this->expectException(InvalidApiResponseException::class);
+        $this->expectExceptionMessage('Invalid JSON response received from API');
+
+        $this->client->updateComment(1, CommentsData::valiPartialUpdateData());   
     }
 
     /**
